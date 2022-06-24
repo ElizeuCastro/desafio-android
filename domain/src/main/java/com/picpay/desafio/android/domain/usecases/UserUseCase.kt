@@ -1,8 +1,8 @@
 package com.picpay.desafio.android.domain.usecases
 
 import com.picpay.desafio.android.domain.models.UserModel
-import com.picpay.desafio.android.domain.utils.Result
+import com.picpay.desafio.android.domain.utils.StateResult
 
 interface UserUseCase {
-    suspend fun getUsers(): Result<List<UserModel>>
+    suspend fun getUsers(): StateResult<List<UserModel>>
 }

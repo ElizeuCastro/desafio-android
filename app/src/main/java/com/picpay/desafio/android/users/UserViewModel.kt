@@ -46,6 +46,6 @@ class UserViewModel(
     }
 
     companion object {
-        private const val SAVED_USERS = "SAVED_USERS"
+        const val SAVED_USERS = "SAVED_USERS"
     }
 }

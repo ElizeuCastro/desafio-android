@@ -6,7 +6,7 @@ import com.picpay.desafio.android.data.source.UserRemoteDataSource
 import com.picpay.desafio.android.domain.models.UserModel
 import com.picpay.desafio.android.domain.repositories.UserRepository
 import com.picpay.desafio.android.domain.utils.Error
-import com.picpay.desafio.android.domain.utils.Result
+import com.picpay.desafio.android.domain.utils.StateResult
 import com.picpay.desafio.android.domain.utils.Success
 
 class UserRepositoryImpl(
@@ -15,7 +15,7 @@ class UserRepositoryImpl(
     private val userMapper: UserMapper
 ) : UserRepository {
 
-    override suspend fun getUsers(): Result<List<UserModel>> = try {
+    override suspend fun getUsers(): StateResult<List<UserModel>> = try {
         refresh()
         val users = userLocalDataSource.getUsers()
         Success(userMapper.toUserModel(users))
