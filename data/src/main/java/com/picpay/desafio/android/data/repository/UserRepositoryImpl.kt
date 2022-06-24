@@ -18,7 +18,7 @@ class UserRepositoryImpl(
     override suspend fun getUsers(): StateResult<List<UserModel>> = try {
         refresh()
         val users = userLocalDataSource.getUsers()
-        Success(userMapper.toUserModel(users))
+        Success(userMapper.entityToUserModel(users))
     } catch (e: Exception) {
         Error(e.message)
     }
@@ -27,7 +27,7 @@ class UserRepositoryImpl(
         try {
             val users = userRemoteDataSource.getUsers()
             if (users.isNotEmpty()) {
-                userLocalDataSource.insertAll(userMapper.toUserEntity(users))
+                userLocalDataSource.insertAll(userMapper.responseToUserEntity(users))
             }
         } catch (e: Exception) {
             if (userLocalDataSource.getCount() == 0) {

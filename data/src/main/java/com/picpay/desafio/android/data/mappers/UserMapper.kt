@@ -6,7 +6,7 @@ import com.picpay.desafio.android.domain.models.UserModel
 
 class UserMapper {
 
-    fun toUserModel(users: List<UserEntity>): List<UserModel> =
+    fun entityToUserModel(users: List<UserEntity>): List<UserModel> =
         users.map { userEntity ->
             UserModel(
                 id = userEntity.id,
@@ -16,9 +16,19 @@ class UserMapper {
             )
         }
 
-    fun toUserEntity(users: List<UserResponse>): List<UserEntity> =
+    fun responseToUserEntity(users: List<UserResponse>): List<UserEntity> =
         users.map { userResponse ->
             UserEntity(
+                id = userResponse.id,
+                name = userResponse.name,
+                img = userResponse.img,
+                username = userResponse.username
+            )
+        }
+
+    fun responseToUserModel(users: List<UserResponse>): List<UserModel> =
+        users.map { userResponse ->
+            UserModel(
                 id = userResponse.id,
                 name = userResponse.name,
                 img = userResponse.img,
