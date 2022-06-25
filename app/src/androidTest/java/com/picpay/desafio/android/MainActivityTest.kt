@@ -1,69 +1,96 @@
 package com.picpay.desafio.android
 
-import androidx.lifecycle.Lifecycle
-import androidx.test.core.app.launchActivity
+import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.IdlingRegistry
 import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.test.espresso.matcher.ViewMatchers.*
+import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.AndroidJUnit4
+import com.picpay.desafio.android.RecyclerViewMatchers.atPosition
+import com.picpay.desafio.android.data.di.DataModule
+import com.picpay.desafio.android.di.UserModule
+import com.picpay.desafio.android.domain.models.UserModel
+import com.picpay.desafio.android.domain.usecases.UserUseCase
+import com.picpay.desafio.android.domain.utils.Success
 import com.picpay.desafio.android.users.MainActivity
-import okhttp3.mockwebserver.Dispatcher
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
+import com.picpay.desafio.android.utils.EspressoIdlingResource
+import io.mockk.MockKAnnotations
+import io.mockk.coEvery
+import io.mockk.impl.annotations.MockK
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
+import org.koin.dsl.module
 
-
+@RunWith(AndroidJUnit4::class)
+@LargeTest
+@ExperimentalCoroutinesApi
 class MainActivityTest {
-
-    private val server = MockWebServer()
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
+    @MockK(relaxed = true)
+    private lateinit var mockedUserUseCase: UserUseCase
+
+    @Before
+    fun registerIdlingResource() {
+        MockKAnnotations.init(this)
+        stopKoin()
+        startKoin {
+            modules(listOf(DataModule.modules, module {
+                factory(override = true) { mockedUserUseCase }
+            }, UserModule.modules))
+        }
+
+        IdlingRegistry.getInstance().register(EspressoIdlingResource.countingIdlingResource)
+    }
+
+    @After
+    fun unregisterIdlingResource() {
+        stopKoin()
+        IdlingRegistry.getInstance().unregister(EspressoIdlingResource.countingIdlingResource)
+    }
+
     @Test
     fun shouldDisplayTitle() {
-        launchActivity<MainActivity>().apply {
-            val expectedTitle = context.getString(R.string.title)
 
-            moveToState(Lifecycle.State.RESUMED)
+        val activityScenario = ActivityScenario.launch(MainActivity::class.java)
 
-            onView(withText(expectedTitle)).check(matches(isDisplayed()))
-        }
+        val expectedTitle = context.getString(R.string.title)
+
+        onView(withText(expectedTitle)).check(matches(isDisplayed()))
+
+        activityScenario.close()
     }
 
     @Test
-    fun shouldDisplayListItem() {
-        server.dispatcher = object : Dispatcher() {
-            override fun dispatch(request: RecordedRequest): MockResponse {
-                return when (request.path) {
-                    "/users" -> successResponse
-                    else -> errorResponse
-                }
-            }
-        }
+    fun shouldDisplayUserInTheList() = runBlocking {
 
-        server.start(serverPort)
+        coEvery { mockedUserUseCase.getUsers() } returns Success(data = provideRemoteMockedUsers())
 
-        launchActivity<MainActivity>().apply {
-            // TODO("validate if list displays items returned by server")
-        }
+        val activityScenario = ActivityScenario.launch(MainActivity::class.java)
 
-        server.close()
+        onView(withId(R.id.recyclerView))
+            .check(matches(atPosition(0, hasDescendant(withText("esquiter")))))
+
+        activityScenario.close()
     }
 
-    companion object {
-        private const val serverPort = 8080
+    private fun provideRemoteMockedUsers() = listOf(
+        UserModel(
+            id = 1,
+            name = "Elizeu",
+            username = "esquiter",
+            img = "http://image.png"
+        )
+    )
 
-        private val successResponse by lazy {
-            val body =
-                "[{\"id\":1001,\"name\":\"Eduardo Santos\",\"img\":\"https://randomuser.me/api/portraits/men/9.jpg\",\"username\":\"@eduardo.santos\"}]"
 
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(body)
-        }
-
-        private val errorResponse by lazy { MockResponse().setResponseCode(404) }
-    }
 }
